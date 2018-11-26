@@ -9,8 +9,10 @@ static int window_width, window_height;
 static void on_keyboard(unsigned char key, int x, int y);
 static void on_reshape(int width, int height);
 static void on_display(void);
+static void testjumpfunc(int a);
 
 static float xKocke = 1, yKocke = 1, zKocke = 0;
+static int jumpFlag = 0;
 
 
 int main(int argc, char **argv) {
@@ -47,6 +49,22 @@ void triggerFunc(int arg) {
 
 }
 
+//funkcija za skok
+static void testjumpfunc(int a) {
+    if(a == 2)
+        return;
+
+    glutTimerFunc(300, testjumpfunc, a+1);
+    if(jumpFlag == 0){
+        zKocke += 2;
+        jumpFlag = 1;
+    } else {
+        zKocke -= 2;
+        jumpFlag = 0;
+    }
+    glutPostRedisplay();
+}
+
 void on_reshape(int width, int height) {
 
     window_width = width;
@@ -58,6 +76,10 @@ static void on_keyboard(unsigned char key, int x, int y) {
     switch (key) {
     case 27:
         exit(0);
+        break;
+    case 32:
+        //pritiskom na space bar poziva fju za skok
+        testjumpfunc(0);
         break;
     case 'w':
         
@@ -79,16 +101,16 @@ static void on_keyboard(unsigned char key, int x, int y) {
         glutPostRedisplay();
         break;
 
-    case 'l' :
+    // case 'l' :
 
-        //zKocke += 10;
-        for(int i=0;i<100;i++)
-            triggerFunc(0.1);
-        //glutPostRedisplay();
-        sleep(2);
-        for(int i=0;i<100;i++)
-            triggerFunc(-0.1);
-         break;
+    //     //zKocke += 10;
+    //     for(int i=0;i<100;i++)
+    //         triggerFunc(0.1);
+    //     //glutPostRedisplay();
+    //     sleep(2);
+    //     for(int i=0;i<100;i++)
+    //         triggerFunc(-0.1);
+    //      break;
     }
 
 }

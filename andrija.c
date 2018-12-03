@@ -3,6 +3,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <time.h>
+
+#define TIMER_ID 0
+#define TIMER_INTERVAL 20
 
 static int window_width, window_height;
 
@@ -14,10 +18,17 @@ static void testjumpfunc(int a);
 static float xKocke = 1, yKocke = 1, zKocke = 0;
 static int jumpFlag = 0;
 
+int xKoordinatePrepreke[] = {-1, 0, 1, 2, 3};
+
+
+static int animation_ongoing; 
+static float xPrepreke = 2, yPrepreke = 50, zPrepreke = 0, yPozPrepreke = 50;
+
 
 int main(int argc, char **argv) {
 
     
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 
@@ -32,6 +43,9 @@ int main(int argc, char **argv) {
     glClearColor(0.75, 0.75, 0.75, 0);
     glEnable(GL_DEPTH_TEST);
     glLineWidth(2);    
+
+    animation_ongoing = 0;
+    srand(time(NULL));
 
     glutMainLoop();
 
@@ -63,6 +77,24 @@ static void testjumpfunc(int a) {
         jumpFlag = 0;
     }
     glutPostRedisplay();
+}
+
+static void pomeriPrepreku(int value) {
+
+    if (value != TIMER_ID)
+        return;
+    yPozPrepreke -= 0.1;
+    if (yPozPrepreke < 0) {
+        yPozPrepreke = 50;
+        xPrepreke = xKoordinatePrepreke[rand() % 5];
+    }
+
+    glutPostRedisplay();
+
+    if (animation_ongoing) {
+        glutTimerFunc(TIMER_INTERVAL, pomeriPrepreku, TIMER_ID);
+    }
+
 }
 
 void on_reshape(int width, int height) {
@@ -101,27 +133,22 @@ static void on_keyboard(unsigned char key, int x, int y) {
         glutPostRedisplay();
         break;
 
-    // case 'l' :
-
-    //     //zKocke += 10;
-    //     for(int i=0;i<100;i++)
-    //         triggerFunc(0.1);
-    //     //glutPostRedisplay();
-    //     sleep(2);
-    //     for(int i=0;i<100;i++)
-    //         triggerFunc(-0.1);
-    //      break;
+    case 'g':
+    case 'G':
+        /* Pokrece se animacija. */
+        if (!animation_ongoing) {
+            glutTimerFunc(TIMER_INTERVAL, pomeriPrepreku, TIMER_ID);
+            animation_ongoing = 1;
+        }
+        break;
+    case 'l' :
+        pomeriPrepreku(0);
+        break;
     }
 
 }
 
 void on_display(void) {
-
-    // sleep(2);
-    // if(zKocke > 0) {
-    //     zKocke -= 2;
-    //     glutPostRedisplay();
-    // }
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -170,8 +197,13 @@ void on_display(void) {
 
     glPopMatrix();
 
-    
 
+    glPushMatrix();
+
+        glColor3f(0, 0, 1);
+        glTranslatef(xPrepreke, yPozPrepreke, zPrepreke);
+        glutSolidCube(1);
+    glPopMatrix();
 
     glutSwapBuffers();
 }

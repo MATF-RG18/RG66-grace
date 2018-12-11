@@ -8,6 +8,9 @@
 #define TIMER_ID 0
 #define TIMER_INTERVAL 20
 
+#define CIRCLE_SEGMENTS 12
+#define PI 3.1415926535
+
 static int window_width, window_height;
 
 static void on_keyboard(unsigned char key, int x, int y);
@@ -15,20 +18,24 @@ static void on_reshape(int width, int height);
 static void on_display(void);
 static void testjumpfunc(int a);
 
-static float xKocke = 2, yKocke = 1, zKocke = 0;
+static float xKocke = 0.5, yKocke = 0, zKocke = 30;
 static int jumpFlag = 0;
 
-int xKoordinatePrepreke[] = {0, 1, 2, 3, 4};
+static float promenaZ = 0;
+static float yQuada = 10;
+static float koordinateMogZ[10000];
+int br = 0;
 
+int xKoordinatePrepreke[] = {0, 1, 2, 3, 4};
 
 static int animation_ongoing; 
 static int igraUtoku;
 static float xPrepreke = 2, yPrepreke = 50, zPrepreke = 0, yPozPrepreke = 50;
 
 
-static float xRavniA = 2, yRavniA = 60, zRavniA=-0.5, scaleXRavniA=5, scaleYRavniA=60, scaleZRavniA=0.5;
+static float xRavniA = 2, yRavniA = 60, zRavniA=30-0.5, scaleXRavniA=5, scaleYRavniA=60, scaleZRavniA=0.3;
 
-static float xRavniB = 2, yRavniB = 120, zRavniB=-0.5, scaleXRavniB=5, scaleYRavniB=60, scaleZRavniB=0.5;
+static float xRavniB = 2, yRavniB = 120, zRavniB=30-0.5, scaleXRavniB=5, scaleYRavniB=60, scaleZRavniB=0.3;
 
 
 typedef struct {
@@ -113,7 +120,7 @@ static void postaviRavanA() {
 
                 p.xPrepreke = xKoordinatePrepreke[rand() % 5];
                 p.yPrepreke = yRavniA-(int)scaleYRavniA/2 + k;
-                p.zPrepreke = zKocke;
+                p.zPrepreke = 30;
                 p.leviX = p.xPrepreke - 0.5;
                 p.desniX = p.xPrepreke + 0.5;
                 p.prednjiY = p.yPrepreke - 0.5;
@@ -137,7 +144,7 @@ static void postaviRavanB() {
 
                 p.xPrepreke = xKoordinatePrepreke[rand() % 5];
                 p.yPrepreke = yRavniB-(int)scaleYRavniB/2 + k;
-                p.zPrepreke = 0;
+                p.zPrepreke = 30;
                 p.leviX = p.xPrepreke - 0.5;
                 p.desniX = p.xPrepreke + 0.5;
                 p.prednjiY = p.yPrepreke - 0.5;
@@ -160,7 +167,7 @@ static void osveziRavanA() {
             if((xKocke - 0.5 < nizPreprekaA[i].desniX && xKocke - 0.5 > nizPreprekaA[i].leviX) || 
                 (xKocke + 0.5 < nizPreprekaA[i].desniX && xKocke + 0.5 > nizPreprekaA[i].leviX)) {
                     //printf("ovo je nas prednji %f, a ovo je prednji od prepreke %f, a abs razlika je %f",
-                    yKocke+0.5, nizPreprekaA[i].prednjiY, fabs((yKocke + 0.5) - nizPreprekaA[i].prednjiY));
+                    yKocke+0.5, nizPreprekaA[i].prednjiY, fabs((yKocke + 0.5) - nizPreprekaA[i].prednjiY);
                     animation_ongoing = 0;
                 }
         }
@@ -188,9 +195,20 @@ static void pomeriRavni(int value) {
 
     if(value != TIMER_ID)
         return;
-
+    yQuada -= 0.1;
     yRavniA-=0.1;
     yRavniB -= 0.1;
+    if(yQuada < 0) {
+        int poz = -10*yQuada;
+        //printf(" pozicija u nizu %d ", poz);
+        zKocke = koordinateMogZ[poz];
+    }
+    if(yQuada < -50) {
+        yQuada = 10;
+        zKocke = 30;
+    }
+    
+    promenaZ++;
     osveziRavanA();
     osveziRavanB();
     if(yRavniA + (int)scaleYRavniA/2 < 0) {
@@ -201,7 +219,6 @@ static void pomeriRavni(int value) {
         yRavniB = 90;
         postaviRavanB();
     }
-
     glutPostRedisplay();
 
     if (animation_ongoing) {
@@ -275,7 +292,7 @@ void on_display(void) {
     gluPerspective(
             60,
             window_width/(float)window_height,
-            1, 50);
+            1, 30);
 
      /* Podesava se tacka pogleda. */
     glMatrixMode(GL_MODELVIEW);
@@ -312,51 +329,74 @@ void on_display(void) {
     glPopMatrix();
 
 
+    // glPushMatrix();
+
+    //     glTranslatef(xRavniA, yRavniA, zRavniA);
+    //     glColor3f(1, 0, 0);
+    //     glScalef(scaleXRavniA, scaleYRavniA, scaleZRavniA);
+    //     if(!igraUtoku) {
+    //         postaviRavanA();
+    //         postaviRavanB();
+    //     }
+    //     glutSolidCube(1);
+        
+    // glPopMatrix();
+
+    // glPushMatrix();
+
+    //     glTranslatef(xRavniB, yRavniB, zRavniB);
+    //     glColor3f(1, 0, 0);
+    //     glScalef(scaleXRavniB, scaleYRavniB, scaleZRavniB);
+    //     glutSolidCube(1);
+        
+    // glPopMatrix();
+
+    //  glPushMatrix();
+
+    //     glColor3f(0, 0, 1);
+    //     glTranslatef(1, 1, zKocke);
+    //     glutWireSphere(20, 300, 300);
+
+    //  glPopMatrix();
+
+    // for (int i=0;i<ukupnoPreprekaA;i++) {
+
+    //     glPushMatrix();
+
+    //         glColor3f(0, 1, 0);
+    //         glTranslatef(nizPreprekaA[i].xPrepreke, nizPreprekaA[i].yPrepreke, nizPreprekaA[i].zPrepreke);
+    //         glutSolidCube(1);
+    //     glPopMatrix();
+
+    // }
+
+    // for (int i=0;i<ukupnoPreprekaB;i++) {
+
+    //     glPushMatrix();
+
+    //         glColor3f(0, 1, 0);
+    //         glTranslatef(nizPreprekaB[i].xPrepreke, nizPreprekaB[i].yPrepreke, nizPreprekaB[i].zPrepreke);
+    //         glutSolidCube(1);
+    //     glPopMatrix();
+
+    //}
+
     glPushMatrix();
-
-        glTranslatef(xRavniA, yRavniA, zRavniA);
+        br = 0;
         glColor3f(1, 0, 0);
-        glScalef(scaleXRavniA, scaleYRavniA, scaleZRavniA);
-        if(!igraUtoku) {
-            postaviRavanA();
-            postaviRavanB();
-        }
-        glutSolidCube(1);
-        
+        glBegin(GL_QUAD_STRIP);
+
+            for(float i=0;i<=60;i+=0.1) {
+                glColor3f(1, 0, (float)i/60);
+                glVertex3d(0, yQuada + i, 30 + 0.8*sin(i*0.8));
+                glVertex3d(5, yQuada + i, 30 + 0.8*sin(i*0.8));
+                koordinateMogZ[br++] = 30.5 + 0.8*sin(i*0.8);
+               // printf("%f ", yQuada + i);
+            }
+
+        glEnd();
+
     glPopMatrix();
-
-    glPushMatrix();
-
-        glTranslatef(xRavniB, yRavniB, zRavniB);
-        glColor3f(1, 0, 0);
-        glScalef(scaleXRavniB, scaleYRavniB, scaleZRavniB);
-        glutSolidCube(1);
-        
-    glPopMatrix();
-
-    for (int i=0;i<ukupnoPreprekaA;i++) {
-
-        glPushMatrix();
-
-            glColor3f(0, 1, 0);
-            glTranslatef(nizPreprekaA[i].xPrepreke, nizPreprekaA[i].yPrepreke, nizPreprekaA[i].zPrepreke);
-            glutSolidCube(1);
-        glPopMatrix();
-
-    }
-
-    for (int i=0;i<ukupnoPreprekaB;i++) {
-
-        glPushMatrix();
-
-            glColor3f(0, 1, 0);
-            glTranslatef(nizPreprekaB[i].xPrepreke, nizPreprekaB[i].yPrepreke, nizPreprekaB[i].zPrepreke);
-            glutSolidCube(1);
-        glPopMatrix();
-
-    }
-
-        
 
     glutSwapBuffers();
 }

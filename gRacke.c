@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <limits.h>
+#include <string.h>
 
 #define TIMER_ID 0
 #define CYLINDER_TIMER 2
@@ -67,13 +68,13 @@ static float distance(Prepreka p);
 
 static void kolizija();
 
-static Prepreka niz_prepreka[100];
+static Prepreka niz_prepreka[1000];
 static int moguci_tipovi_prepreka[] = {0, 1, 2, 3}; //feder, kocka, teleport, rupa
 static int niz_mogucih_x[] = {0, 1, 2, 3, 4, 5};
 
 
 static int br_prepreka = 0;
-static float koordinate_prepreka_na_sinusoidi[]  = {5, 10, 15, 20, 25, 30, 35, 40, 45, 50};
+static float koordinate_prepreka_na_sinusoidi[]  = {5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95};
 int br_koordinata = 10;
 
 static int animation_ongoing = 0;
@@ -104,6 +105,15 @@ static int animacija_skretanja_desno = 0;
 
 static float rotation = 0;
 static float rotation_desno = 0;
+
+
+static int imune = 0;
+
+static int score = 0;
+static int skriveni_skor = 0;
+
+
+static int prvi_put = 0;
 
 int main(int argc, char **argv) {
 
@@ -144,6 +154,7 @@ void on_reshape(int width, int height) {
 
     window_width = width;
     window_height = height;
+   // br_prepreka = 0;
 }
 
 static void on_keyboard(unsigned char key, int x, int y) {
@@ -161,7 +172,7 @@ static void on_keyboard(unsigned char key, int x, int y) {
         break;
     case 'd':
     case 'D' :
-        printf("usooooo");
+        
         
         X += 0.7;
         eyeX += 0.7;
@@ -208,6 +219,14 @@ void pomeriQuad(int value) {
     if (value != TIMER_ID)
         return;
 
+    skriveni_skor++;
+    if(skriveni_skor == 10) {
+        score++;
+        skriveni_skor = 0;
+    }
+    if(imune > 0) {
+        imune--;
+    }
     y_sinusoide -= 0.1;
 
     for(int i=0;i<br_prepreka;i++) {
@@ -256,6 +275,10 @@ void on_display(void) {
 
     /* Podesava se viewport. */
     glViewport(0, 0, window_width, window_height);
+    //printf("%d----%d\n", window_width, window_height);
+    //glRasterPos3f(window_width - window_width/4.0, 10, window_height - window_height/2.0);
+    
+
 
     /* Podesava se projekcija. */
     glMatrixMode(GL_PROJECTION);
@@ -277,6 +300,17 @@ void on_display(void) {
         0, 0, 1
     );
 
+    glRasterPos3f(eyeX + 3, 10, eyeZ + 3);
+    char score_display[50] = "SCORE : ";
+    char string_score[50];
+    sprintf(string_score, "%d", score);
+    strcat(score_display, string_score);
+    int len = (int) strlen(score_display);
+
+    for(int i=0; i<len;i++) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, score_display[i]);
+    }
+
     glPushMatrix();
 
     glBegin(GL_LINES);
@@ -297,11 +331,14 @@ void on_display(void) {
 
     iscrtaj_motor();
 
-    iscrtaj_prepreke();
+    
 
     glPushMatrix();
-    rand_factor = 0.4;
+    rand_factor = 0.7;
+
     iscrataj_sinusoidu(rand_factor);
+    iscrtaj_prepreke();
+    
     glPopMatrix();
 
     glutSwapBuffers();
@@ -325,19 +362,35 @@ void iscrataj_sinusoidu(double rand_factor) {
             glVertex3f(0, y_sinusoide + i, sin(i * rand_factor));
             glVertex3f(5, y_sinusoide + i, sin(i * rand_factor));
 
-            if (y_sinusoide == 10) {
-
-                for (int j=0;j<10;j++) {
+            //printf("%f--%d--%d\n", y_sinusoide, prvi_put, animation_ongoing);
+            if (fabs(y_sinusoide - 10) < 0.01 && (prvi_put == 0 || animation_ongoing) ) {
+                
+                for (int j=0;j<19;j++) {
 
                     if( fabs(i - koordinate_prepreka_na_sinusoidi[j]) < 0.01) {
                         //printf("usoo\n");
-                        Prepreka p;
-                        p.tipPrepreke = moguci_tipovi_prepreka[(int)rand() % 4];
-                        p.xPrepreke = 1;
-                        p.yPrepreke = y_sinusoide + i;
-                        p.zPrepreke = sin(i * rand_factor) + 0.5;
-                        p.ugraoRotacije = cos(i * rand_factor);
-                        niz_prepreka[br_prepreka++] = p;
+                        int broj_prepreka = (int)rand() % 3 + 1;
+                        int niz_zauzetih[] = {0, 0, 0, 0, 0};
+                        int broj_pogodaka = 0;
+                        while(broj_pogodaka < broj_prepreka) {
+
+                            //if()
+
+                            Prepreka p;
+                            int k = 100;
+                            while(k == 100  || niz_zauzetih[k]) {
+                                k = niz_mogucih_x[(int)rand() % 5];
+                            }
+                            broj_pogodaka++;
+                            niz_zauzetih[k] = 1;
+                            p.xPrepreke = k;
+                            p.tipPrepreke = moguci_tipovi_prepreka[(int)rand() % 4];
+                            p.yPrepreke = y_sinusoide + i;
+                            p.zPrepreke = sin(i * rand_factor) + 0.5;
+                            p.ugraoRotacije = cos(i * rand_factor);
+                            niz_prepreka[br_prepreka++] = p;
+
+                        }
                     }
 
                 }
@@ -345,7 +398,7 @@ void iscrataj_sinusoidu(double rand_factor) {
 
         }
 
-
+        prvi_put = 1;
     glEnd();
 
 
@@ -591,6 +644,9 @@ static float distance(Prepreka p)
 
 static void kolizija() {
 
+    if(imune)
+        return;
+
     for (int i=0;i<br_prepreka;i++) {
 
         Prepreka p = niz_prepreka[i];
@@ -601,6 +657,7 @@ static void kolizija() {
             else if(p.tipPrepreke == 1) {
                 if(!animacija_spirale) {
                    animacija_spirale = 1;
+                   score += 5;
                     glutTimerFunc(10, timer_spirala, ID_SPIRALE);
                 }
             }
@@ -641,6 +698,8 @@ static void timer_spirala(int value)
 }
 
 static void teleportuj_se() {
+    score += 5;
+    imune = 101;
     X = niz_mogucih_x[(int)rand() % 5];
     eyeX = X;
 }

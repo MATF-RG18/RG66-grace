@@ -6,6 +6,7 @@
 #include <time.h>
 #include <limits.h>
 #include <string.h>
+#include "image.h"
 
 #define TIMER_ID 0
 #define CYLINDER_TIMER 2
@@ -21,6 +22,13 @@
 
 #define CIRCLE_SEGMENTS 12
 #define PI 3.1415926535
+
+#define FILENAME0 "mud2.bmp"
+static GLuint names[2];
+static float matrix[16];
+
+
+static void initialize(void);
 
 static int window_width, window_height;
 
@@ -115,6 +123,8 @@ static int skriveni_skor = 0;
 
 static int prvi_put = 0;
 
+static void iscrtaj_kvadar(void);
+
 int main(int argc, char **argv) {
 
     
@@ -143,6 +153,10 @@ int main(int argc, char **argv) {
     eyeX = 2;
     eyeY = y_kocke - 1.5;
     eyeZ =  z_kocke + 1.2;
+
+    //glutFullScreen();
+
+    initialize();
 
     glutMainLoop();
 
@@ -300,6 +314,10 @@ void on_display(void) {
         0, 0, 1
     );
 
+    // glPushMatrix();
+    // iscrtaj_kvadar();
+    // glPopMatrix();
+
     glRasterPos3f(eyeX + 3, 10, eyeZ + 3);
     char score_display[50] = "SCORE : ";
     char string_score[50];
@@ -334,7 +352,7 @@ void on_display(void) {
     
 
     glPushMatrix();
-    rand_factor = 0.7;
+    rand_factor = 0.8;
 
     iscrataj_sinusoidu(rand_factor);
     iscrtaj_prepreke();
@@ -346,22 +364,38 @@ void on_display(void) {
 
 void iscrataj_sinusoidu(double rand_factor) {
 
-    glColor3f(0, 0, 1);
+    // glColor3f(0, 0, 1);
+    glBindTexture(GL_TEXTURE_2D, names[0]);
+    glEnable(GL_TEXTURE_2D);
     glBegin(GL_QUAD_STRIP);
+
+    glNormal3f(1, 0, 0);
+
+        
 
         br_vrednosti = 0;
         
+        float prva_kord = 0, druga_kord = 1, uvecanje = 0;
         
         for (float i=0;i<=100;i+=0.1) {
 
-
+                // 0 0    1 0
+                // 0 0.1  1 0.1
+                // 0 0.2  1 0.2
             
             niz_z[br_vrednosti] = sin(i * rand_factor);
             niz_rotacija[br_vrednosti++] = cos(i * rand_factor);
-
+            glTexCoord2f(prva_kord, uvecanje); // 0 0 // 1 0
+            //druga_kord = (druga_kord + 1) % 2; // 1 1
             glVertex3f(0, y_sinusoide + i, sin(i * rand_factor));
-            glVertex3f(5, y_sinusoide + i, sin(i * rand_factor));
-
+            glTexCoord2f(druga_kord, uvecanje); // 0 1
+            // druga_kord = (druga_kord + 1) % 2;
+            // prva_kord = (prva_kord + 1) % 2;
+            //  // 1 0 // 0 0
+            glVertex3f(8, y_sinusoide + i, sin(i * rand_factor));
+            uvecanje += 0.1;
+            if(uvecanje == 1)
+                uvecanje = 0;
             //printf("%f--%d--%d\n", y_sinusoide, prvi_put, animation_ongoing);
             if (fabs(y_sinusoide - 10) < 0.01 && (prvi_put == 0 || animation_ongoing) ) {
                 
@@ -400,7 +434,8 @@ void iscrataj_sinusoidu(double rand_factor) {
 
         prvi_put = 1;
     glEnd();
-
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
 
 }
 
@@ -720,4 +755,121 @@ static void timer_rupe (int value)
     glutPostRedisplay();
     if(animacija_rupe)
         glutTimerFunc(20,timer_rupe,ID_RUPE);
+}
+
+static void initialize(void)
+{
+    /* Objekat koji predstavlja teskturu ucitanu iz fajla. */
+    Image * image;
+
+    /* Ukljucuju se teksture. */
+    glEnable(GL_TEXTURE_2D);
+
+    glTexEnvf(GL_TEXTURE_ENV,
+              GL_TEXTURE_ENV_MODE,
+              GL_REPLACE);
+
+    /*
+     * Inicijalizuje se objekat koji ce sadrzati teksture ucitane iz
+     * fajla.
+     */
+    // 0 0    1 0
+    // 0 0.1  1 0.1
+    // 0 0.2  1 0.2
+    image = image_init(0, 0);
+
+    /* Kreira se prva tekstura. */
+    image_read(image, FILENAME0);
+
+    /* Generisu se identifikatori tekstura. */
+    glGenTextures(2, names);
+
+    glBindTexture(GL_TEXTURE_2D, names[0]);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D,
+                    GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+                 image->width, image->height, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+
+    /* Kreira se druga tekstura. */
+    // image_read(image, FILENAME1);
+
+    // glBindTexture(GL_TEXTURE_2D, names[1]);
+    // glTexParameteri(GL_TEXTURE_2D,
+    //                 GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D,
+    //                 GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+    //              image->width, image->height, 0,
+    //              GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+
+    /* Iskljucujemo aktivnu teksturu */
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    /* Unistava se objekat za citanje tekstura iz fajla. */
+    image_done(image);
+
+    /* Inicijalizujemo matricu rotacije. */
+     glMatrixMode(GL_MODELVIEW);
+     glLoadIdentity();
+    // glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+}
+
+static void iscrtaj_kvadar() {
+
+    // glBindTexture(GL_TEXTURE_2D, names[0]);
+    // glEnable(GL_TEXTURE_2D);
+
+    // int u = 0;
+    // float angle = 0;
+
+    // /* crtamo zarubljenu kupu */
+    // glBegin(GL_TRIANGLE_STRIP);
+    //     for (u = 0; u <= 16; u++) {
+    //         angle = u * (2 * PI / 16);
+
+    //         /* definisemo normalu povrsi */
+    //         glNormal3f(cos(angle), 0, sin(angle));
+
+    //         /* definisemo koordinate tacaka - u prostoru i teksturi */
+    //         glTexCoord2f(u / (float) 16, 0);
+    //         glVertex3f(2 * cos(angle), 0, 2 * sin(angle));
+
+    //         glTexCoord2f(u / (float) 16, 1);
+    //         glVertex3f(2 * cos(angle), 1, 2 * sin(angle));
+    //     }
+    // glEnd();
+
+    // /* Iskljucujemo crtanje tekstura */
+    // glDisable(GL_TEXTURE_2D);
+
+    glBindTexture(GL_TEXTURE_2D, names[0]);
+    glEnable(GL_TEXTURE_2D);
+
+    glBegin(GL_QUADS);
+
+        glNormal3f(1, 0, 0);
+
+        glTexCoord2f(0, 0);
+        glVertex3f(1, 0, 2);
+
+        glTexCoord2f(1, 0);
+        glVertex3f(2.2, 0, 2);
+
+        glTexCoord2f(1, 1);
+        glVertex3f(2.2, 2.2, 2);
+
+        glTexCoord2f(0, 1);
+        glVertex3f(1, 2.2, 2);
+
+    glEnd();
+
+    glDisable(GL_TEXTURE_2D);
+
 }

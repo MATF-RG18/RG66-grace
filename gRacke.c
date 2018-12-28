@@ -28,8 +28,6 @@
 
 #define FILENAME0 "mud2.bmp"
 static GLuint names[2];
-static float matrix[16];
-
 
 static void initialize(void);
 
@@ -45,12 +43,15 @@ void pomeriQuad(int value);
 
 static void iscrataj_sinusoidu(double);
 static void iscrtaj_ravan();
-static void iscrataj_kocku();
+//static void iscrataj_kocku();
 static void iscrtaj_motor();
 static void iscrtaj_prepreke();
 static void iscrtaj_spiralu();
-static void iscratj_teleport(double);
+//static void iscratj_teleport(double);
 static void iscrtaj_rupu();
+static void iscrtaj_metak(int);
+
+static void iscrtaj_sarzer();
 
 static void timer_spirala(int);
 static float parametar_spirale = 0;
@@ -73,15 +74,27 @@ typedef struct {
     float leviX, desniX, prednjiY, zadnjY;
     int tipPrepreke;
     float ugraoRotacije;
+    int pogodjena;
 
 }Prepreka;
+
+typedef struct {
+
+    float x, y, z;
+    int ispaljen;
+
+}Metak;
+
+float brzina_metka = 0.5;
+float scale_metka = 1;
 
 static float distance(Prepreka p);
 
 static void kolizija();
+static void kolizija_metak(Metak m);
 
 Prepreka niz_prepreka[1000];
-static int moguci_tipovi_prepreka[] = {0, 1, 2, 3}; //feder, kocka, teleport, rupa
+static int moguci_tipovi_prepreka[] = {0, 1, 2, 3, 4}; //feder, kocka, teleport, rupa
 static int niz_mogucih_x[] = {0, 1, 2, 3, 4, 5};
 
 
@@ -96,7 +109,7 @@ static float x_kocke, y_kocke, z_kocke;
 static float X = 2;
 
 static float rand_factor = 0.8;
-static float pomeraj_sinusoide = 0;
+//static float pomeraj_sinusoide = 0;
 
 static float niz_z[1000];
 static float niz_rotacija[1000];
@@ -130,9 +143,13 @@ static int prvi_put = 0;
 
 static float y_ravni = 120;
 static float z_ravni;
-static float scale_ravni;
 
-static void iscrtaj_kvadar(void);
+
+static float puska_tajmer = 0;
+static Metak sarzer[5];
+static int redni_metak = 5;
+static Metak m;
+
 
 int main(int argc, char **argv) {
 
@@ -165,6 +182,8 @@ int main(int argc, char **argv) {
     eyeZ =  z_kocke + 1.2;
 
     //glutFullScreen();
+
+    
 
     initialize();
 
@@ -266,7 +285,21 @@ static void on_keyboard(unsigned char key, int x, int y) {
     case 'f' :
 
         animation_ongoing = 0;
+    case 32 :
+
+        if(redni_metak < 5) {
+
+            m.x = eyeX;
+            m.y = eyeY;
+            m.z = eyeZ;
+            m.ispaljen = 1;
+
+            sarzer[redni_metak++] = m;
+        }
+
+        break;
     }
+
     
 
 }
@@ -371,9 +404,14 @@ void on_display(void) {
         0, 0, 1
     );
 
-    // glPushMatrix();
-    // iscrtaj_kvadar();
-    // glPopMatrix();
+
+
+    for(int i=0;i<redni_metak;i++) {
+
+        iscrtaj_metak(i);
+        kolizija_metak(sarzer[i]);
+
+    }
 
     glRasterPos3f(eyeX + 3, 10, eyeZ + 3);
     char score_display[50] = "SCORE : ";
@@ -479,8 +517,9 @@ void iscrataj_sinusoidu(double rand_factor) {
                             }
                             broj_pogodaka++;
                             niz_zauzetih[k] = 1;
+                            p.pogodjena = 0;
                             p.xPrepreke = k;
-                            p.tipPrepreke = moguci_tipovi_prepreka[(int)rand() % 4];
+                            p.tipPrepreke = moguci_tipovi_prepreka[(int)rand() % 5];
                             p.yPrepreke = y_sinusoide + i;
                             p.zPrepreke = sin(i * rand_factor) + 0.5;
                             p.ugraoRotacije = cos(i * rand_factor);
@@ -544,7 +583,7 @@ void iscrtaj_prepreke() {
         glPushMatrix();
         glTranslatef(p.xPrepreke, p.yPrepreke, p.zPrepreke);
         
-        if (p.tipPrepreke == 0) {
+        if (p.tipPrepreke == 0 && !(p.pogodjena)) {
             glPushMatrix();
             glColor3f(0, 1, 0);
             glRotatef(p.ugraoRotacije * 180/PI, 1, 0, 0);
@@ -575,23 +614,29 @@ void iscrtaj_prepreke() {
                 iscrtaj_rupu();
             glPopMatrix();
         }
+        else if(p.tipPrepreke == 4) {
+
+            glPushMatrix();
+                iscrtaj_sarzer();
+            glPopMatrix();
+        }
         //glutSolidCube(1);
         glPopMatrix();
 
     }
 }
 
-void iscrataj_kocku() {
+// void iscrataj_kocku() {
 
-    glPushMatrix();
-        glTranslatef(X, y_kocke, z_kocke);
+//     glPushMatrix();
+//         glTranslatef(X, y_kocke, z_kocke);
 
-        glRotatef(ugrao_rotacije, 1, 0, 0);
-        glColor3f(1, 0, 0);
-        glutWireCube(1);
-    glPopMatrix();
+//         glRotatef(ugrao_rotacije, 1, 0, 0);
+//         glColor3f(1, 0, 0);
+//         glutWireCube(1);
+//     glPopMatrix();
 
-}
+// }
 
 void iscrtaj_motor() {
 
@@ -734,27 +779,27 @@ static void iscrtaj_spiralu() {
     glPopMatrix();
 }
 
-static void iscratj_teleport(double y_prepreke)
-{
-    glPushMatrix();
-        //glTranslatef(x_obst,y_obst+1.5,z_obst);
-        //glScalef(.6,1.2,0);
-        GLfloat x = 0,y=0,z=0,angle, r  = .0001;
-        glBegin(GL_LINE_STRIP);
-        glLineWidth(7);
-        for(angle = 0; angle < 1800; angle += 1)
-        {   
-            x = r * cos(angle * PI/180);
-            z = r * sin(angle * PI/180);
-            y=y_prepreke;
-            glVertex3f(x,y,z);
+// static void iscratj_teleport(double y_prepreke)
+// {
+//     glPushMatrix();
+//         //glTranslatef(x_obst,y_obst+1.5,z_obst);
+//         //glScalef(.6,1.2,0);
+//         GLfloat x = 0,y=0,z=0,angle, r  = .0001;
+//         glBegin(GL_LINE_STRIP);
+//         glLineWidth(7);
+//         for(angle = 0; angle < 1800; angle += 1)
+//         {   
+//             x = r * cos(angle * PI/180);
+//             z = r * sin(angle * PI/180);
+//             y=y_prepreke;
+//             glVertex3f(x,y,z);
             
-            r+= .0005;
-        }
-        glEnd();
-    glPopMatrix();
+//             r+= .0005;
+//         }
+//         glEnd();
+//     glPopMatrix();
 
-}
+// }
 
 static void iscrtaj_rupu() {
 
@@ -786,7 +831,7 @@ static void kolizija() {
     for (int i=0;i<br_prepreka;i++) {
 
         Prepreka p = niz_prepreka[i];
-        if(distance(p) <= 1.02) {
+        if(distance(p) <= 1.02 && !(p.pogodjena)) {
             if(p.tipPrepreke == 0) {
                 animation_ongoing = 0;
             }
@@ -806,7 +851,25 @@ static void kolizija() {
                     glutTimerFunc(TIMER_ZA_RUPU, timer_rupe, ID_RUPE);
                 }
             }
+            else if(p.tipPrepreke == 4) {
+                redni_metak = 0;
+            }
         }
+
+    }
+
+}
+static void kolizija_metak(Metak m) {
+
+    for (int i=0; i<br_prepreka;i++) {
+        Prepreka p = niz_prepreka[i];
+        if(fabs(p.xPrepreke - m.x) < 0.5 && fabs(p.yPrepreke - m.y +scale_metka) < 0.2 
+        &&  fabs(p.zPrepreke - m.z) < 0.5)   {
+            niz_prepreka[i].pogodjena = 1;
+            // && fabs(p.yPrepreke - m.y +scale_metka) < 0.01
+                                         //&& fabs(p.zPrepreke - m.z) < 0.5) {
+                                             niz_prepreka[i].pogodjena = 1;
+                                         }
 
     }
 
@@ -920,4 +983,38 @@ static void initialize(void)
      glMatrixMode(GL_MODELVIEW);
      glLoadIdentity();
     // glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
+}
+
+static void iscrtaj_metak(int redni_broj) {
+        glPushMatrix();
+
+        glColor3f(0, 0, 1);
+        glLineWidth(3);
+        glBegin(GL_LINES);
+
+            Metak m1 = sarzer[redni_broj];
+
+            glVertex3f(m1.x, m1.y, m1.z);
+            glVertex3f(m1.x, m1.y + scale_metka, m1.z);
+
+            m1.y += brzina_metka;
+            sarzer[redni_broj] = m1;
+            
+            
+
+        glEnd();
+
+    glPopMatrix();
+}
+
+static void iscrtaj_sarzer() {
+
+    glPushMatrix();
+
+        glColor3f(0.2, 0.2, 0.2);
+        glRotatef(35, 0, 1, 0);
+        glScalef(0.3, 0.3, 1.2);
+        glutSolidCube(1);
+    glPopMatrix();
+
 }

@@ -8,6 +8,9 @@
 #include <string.h>
 #include "image.h"
 
+//  #include "globalne.h"
+//  #include "iscrtavanja.h"
+
 #define TIMER_ID 0
 #define CYLINDER_TIMER 2
 #define QUAD_TIMER 1
@@ -35,27 +38,28 @@ static int window_width, window_height;
 static void on_keyboard(unsigned char key, int x, int y);
 static void on_reshape(int width, int height);
 static void on_display(void);
+static void on_realese(unsigned char key, int x, int y);
 
 
 void pomeriQuad(int value);
 
-void iscrataj_sinusoidu(double);
-
-void iscrataj_kocku();
-
-void iscrtaj_motor();
-
-void iscrtaj_prepreke();
-
+static void iscrataj_sinusoidu(double);
+static void iscrtaj_ravan();
+static void iscrataj_kocku();
+static void iscrtaj_motor();
+static void iscrtaj_prepreke();
 static void iscrtaj_spiralu();
+static void iscratj_teleport(double);
+static void iscrtaj_rupu();
+
 static void timer_spirala(int);
 static float parametar_spirale = 0;
 static int animacija_spirale = 0;
 
-static void iscratj_teleport(double);
+
 static void teleportuj_se();
 
-static void iscrtaj_rupu();
+
 static void timer_rupe(int);
 static int animacija_rupe = 0;
 static float parametar_rupe = 0;
@@ -76,7 +80,7 @@ static float distance(Prepreka p);
 
 static void kolizija();
 
-static Prepreka niz_prepreka[1000];
+Prepreka niz_prepreka[1000];
 static int moguci_tipovi_prepreka[] = {0, 1, 2, 3}; //feder, kocka, teleport, rupa
 static int niz_mogucih_x[] = {0, 1, 2, 3, 4, 5};
 
@@ -123,6 +127,11 @@ static int skriveni_skor = 0;
 
 static int prvi_put = 0;
 
+
+static float y_ravni = 120;
+static float z_ravni;
+static float scale_ravni;
+
 static void iscrtaj_kvadar(void);
 
 int main(int argc, char **argv) {
@@ -139,6 +148,7 @@ int main(int argc, char **argv) {
     glutKeyboardFunc(on_keyboard);
     glutReshapeFunc(on_reshape);
     glutDisplayFunc(on_display);
+    glutKeyboardUpFunc(on_realese);
 
     glClearColor(0.75, 0.75, 0.75, 0);
     glEnable(GL_DEPTH_TEST);
@@ -171,6 +181,37 @@ void on_reshape(int width, int height) {
    // br_prepreka = 0;
 }
 
+
+static void on_realese(unsigned char key, int x, int y) {
+
+    switch (key) {
+
+        case 'd' :
+        case 'D' :
+
+            animacija_skretanja_desno = 0;
+            ugoa_desno = 0;
+            animacija_skretanja_desno = 0;
+            eyeY = y_kocke - 1.5;
+            eyeX = X;
+            rotation_desno = 0;
+            break;
+
+        case 'a' :
+        case 'A' :
+
+            ugao_levo = 0;
+            eyeY = y_kocke - 1.5;
+            eyeX = X;
+            animacija_skretanja_levo = 0;
+            rotation = 0;
+
+            break;
+    }
+
+
+
+}
 static void on_keyboard(unsigned char key, int x, int y) {
 
     switch (key) {
@@ -187,20 +228,21 @@ static void on_keyboard(unsigned char key, int x, int y) {
     case 'd':
     case 'D' :
         
-        
-        X += 0.7;
-        eyeX += 0.7;
-        if(!animacija_skretanja_desno && !animacija_skretanja_levo) {
-           animacija_skretanja_desno = 1;
-           glutTimerFunc(TIMER_INTERVAL, skreni_desno, CYLINDER_TIMER);
-        }
+        //animacija_skretanja_desno = 1;
+        //glutTimerFunc(TIMER_INTERVAL, skreni_desno, CYLINDER_TIMER);
+        X += 0.2;
+        eyeX += 0.2;
+         if(!animacija_skretanja_desno && !animacija_skretanja_levo) {
+             animacija_skretanja_desno = 1;
+             glutTimerFunc(TIMER_INTERVAL, skreni_desno, CYLINDER_TIMER);
+         }
         glutPostRedisplay();
         break;
     case 'a':
     case 'A' :
         
-        X -= 0.7;
-        eyeX -= 0.7;
+        X -= 0.2;
+        eyeX -= 0.2;
         if(!animacija_skretanja_levo && !animacija_skretanja_desno) {
             animacija_skretanja_levo = 1;
             glutTimerFunc(TIMER_INTERVAL, skreni_levo, CYLINDER_TIMER);
@@ -242,6 +284,7 @@ void pomeriQuad(int value) {
         imune--;
     }
     y_sinusoide -= 0.1;
+    y_ravni -= 0.1;
 
     for(int i=0;i<br_prepreka;i++) {
         niz_prepreka[i].yPrepreke -= 0.1;
@@ -249,7 +292,16 @@ void pomeriQuad(int value) {
     kolizija();
     if(y_sinusoide <= 0.5) {
 
-        ugrao_rotacije = niz_rotacija[trenutni_element];
+        if(y_sinusoide + 100 <= 0) {
+            z_kocke = z_ravni;
+        }
+        
+        else
+        {
+            ugrao_rotacije = niz_rotacija[trenutni_element];
+        }
+        
+        
         //ugrao_rotacije += 1 % 360;
         //printf("%f ", ugrao_rotacije);
         if(animacija_spirale)
@@ -269,11 +321,16 @@ void pomeriQuad(int value) {
         //1.3;
     }
 
-    if(y_sinusoide + 90 <= 0) {
+    if(y_ravni + 10 <= 0) {
+        y_ravni = 120;
+    }
+
+    if(y_sinusoide + 100 <= 0) {
         trenutni_element = 0;
         ugrao_rotacije = 0;
-        y_sinusoide = 10;
+        y_sinusoide = 20;
         br_prepreka = 0;
+        //y_ravni = 120;
     }
 
     glutPostRedisplay();
@@ -355,6 +412,7 @@ void on_display(void) {
     rand_factor = 0.8;
 
     iscrataj_sinusoidu(rand_factor);
+    iscrtaj_ravan();
     iscrtaj_prepreke();
     
     glPopMatrix();
@@ -364,7 +422,7 @@ void on_display(void) {
 
 void iscrataj_sinusoidu(double rand_factor) {
 
-    // glColor3f(0, 0, 1);
+
     glBindTexture(GL_TEXTURE_2D, names[0]);
     glEnable(GL_TEXTURE_2D);
     glBegin(GL_QUAD_STRIP);
@@ -379,26 +437,30 @@ void iscrataj_sinusoidu(double rand_factor) {
         
         for (float i=0;i<=100;i+=0.1) {
 
+
+
                 // 0 0    1 0
                 // 0 0.1  1 0.1
                 // 0 0.2  1 0.2
             
             niz_z[br_vrednosti] = sin(i * rand_factor);
             niz_rotacija[br_vrednosti++] = cos(i * rand_factor);
-            glTexCoord2f(prva_kord, uvecanje); // 0 0 // 1 0
-            //druga_kord = (druga_kord + 1) % 2; // 1 1
+            glTexCoord2f(prva_kord, uvecanje); 
             glVertex3f(0, y_sinusoide + i, sin(i * rand_factor));
-            glTexCoord2f(druga_kord, uvecanje); // 0 1
-            // druga_kord = (druga_kord + 1) % 2;
-            // prva_kord = (prva_kord + 1) % 2;
-            //  // 1 0 // 0 0
+
+            glTexCoord2f(druga_kord, uvecanje); 
             glVertex3f(8, y_sinusoide + i, sin(i * rand_factor));
+
+            
+
             uvecanje += 0.1;
             if(uvecanje == 1)
                 uvecanje = 0;
             //printf("%f--%d--%d\n", y_sinusoide, prvi_put, animation_ongoing);
             if (fabs(y_sinusoide - 10) < 0.01 && (prvi_put == 0 || animation_ongoing) ) {
                 
+                z_ravni = sin(100 * rand_factor);
+
                 for (int j=0;j<19;j++) {
 
                     if( fabs(i - koordinate_prepreka_na_sinusoidi[j]) < 0.01) {
@@ -432,10 +494,45 @@ void iscrataj_sinusoidu(double rand_factor) {
 
         }
 
-        prvi_put = 1;
-    glEnd();
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glDisable(GL_TEXTURE_2D);
+        
+        prvi_put = 1; //zbog reshape u prvom
+        glEnd();
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glDisable(GL_TEXTURE_2D);
+
+}
+
+static void iscrtaj_ravan() {
+
+    glPushMatrix();
+
+          glBindTexture(GL_TEXTURE_2D, names[0]);
+          glEnable(GL_TEXTURE_2D);
+         
+
+          int prvi = 0, drugi = 0;
+          glBegin(GL_QUAD_STRIP);
+          glNormal3f(0, 0, 1);
+        for(int i=0;i<=24;i+=2) {
+            glTexCoord2f(prvi, drugi);
+            prvi = (prvi + 1) % 2;
+             glVertex3f(0, y_ravni - 12 + i, z_ravni + 0.7);
+            glTexCoord2f(prvi, drugi);
+            prvi = (prvi + 1) % 2;
+            drugi = (drugi + 1) % 2;
+             glVertex3f(8, y_ravni - 12 + i, z_ravni + 0.7);
+         }
+
+         glEnd();
+         glDisable(GL_TEXTURE_2D);
+         glBindTexture(GL_TEXTURE_2D, 0);
+        
+        
+        glTranslatef(4, y_ravni, z_ravni);
+        glScalef(8, 20, 1);
+        glutSolidCube(1);
+
+    glPopMatrix();
 
 }
 
@@ -503,7 +600,9 @@ void iscrtaj_motor() {
     if(animacija_skretanja_desno)
         glRotatef(-15*sin(ugoa_desno * PI/180), 0, 0, 1);
     else if(animacija_skretanja_levo) {
-        glRotatef(-15*sin(ugao_levo * PI/180), 0, 0, -1);
+        //glTranslatef(-1, 0, 0);
+        //eyeX + 0.5;
+        glRotatef(15*sin(ugao_levo * PI/180), 0, 0, 1);
     }
     //glRotatef(ugrao_rotacije * 180/PI, 1, 0, 0);
     glPushMatrix();
@@ -565,19 +664,20 @@ void skreni_desno(int value) {
     if(value != CYLINDER_TIMER)
         return;
 
-    ugoa_desno += 5;
+    if(ugoa_desno < 90)
+        ugoa_desno += 5;
     rotation_desno += 0.1;
 
-    eyeX =  eyeX - 0.01 * cos((rotation) * PI/180);
-    eyeY =  eyeY - 0.01 * sin((rotation) * PI/180);
+    //eyeX =  eyeX - 0.01 * cos((rotation) * PI/180);
+    //eyeY =  eyeY - 0.01 * sin((rotation) * PI/180);
 
-    if(ugoa_desno >= 180) {
+    if(ugoa_desno >= 90) {
 
-            ugoa_desno = 0;
-            animacija_skretanja_desno = 0;
-            eyeY = y_kocke - 1.5;
-            eyeX = X;
-            rotation_desno = 0;
+            // ugoa_desno = 0;
+            // animacija_skretanja_desno = 0;
+            // eyeY = y_kocke - 1.5;
+            // eyeX = X;
+            // rotation_desno = 0;
 
     }
         
@@ -593,19 +693,20 @@ void skreni_levo(int value) {
     if(value != CYLINDER_TIMER)
         return;
 
-    ugao_levo += 5;
+    if(ugao_levo < 90)
+        ugao_levo += 5;
     rotation += 3;
 
-    eyeX =  eyeX + 0.01 *cos(rotation * PI/180);
-    eyeY =  eyeY + 0.01 * sin(rotation * PI/180);
+    //eyeX =  eyeX + 0.01 *cos(rotation * PI/180);
+    //eyeY =  eyeY + 0.01 * sin(rotation * PI/180);
 
-    if(ugao_levo >= 180) {
-        ugao_levo = 0;
-        eyeY = y_kocke - 1.5;
-        eyeX = X;
-        animacija_skretanja_levo = 0;
-        rotation = 0;
-    }
+    // if(ugao_levo >= 180) {
+    //     ugao_levo = 0;
+    //     eyeY = y_kocke - 1.5;
+    //     eyeX = X;
+    //     animacija_skretanja_levo = 0;
+    //     rotation = 0;
+    // }
         
     
     glutPostRedisplay();
@@ -819,57 +920,4 @@ static void initialize(void)
      glMatrixMode(GL_MODELVIEW);
      glLoadIdentity();
     // glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
-}
-
-static void iscrtaj_kvadar() {
-
-    // glBindTexture(GL_TEXTURE_2D, names[0]);
-    // glEnable(GL_TEXTURE_2D);
-
-    // int u = 0;
-    // float angle = 0;
-
-    // /* crtamo zarubljenu kupu */
-    // glBegin(GL_TRIANGLE_STRIP);
-    //     for (u = 0; u <= 16; u++) {
-    //         angle = u * (2 * PI / 16);
-
-    //         /* definisemo normalu povrsi */
-    //         glNormal3f(cos(angle), 0, sin(angle));
-
-    //         /* definisemo koordinate tacaka - u prostoru i teksturi */
-    //         glTexCoord2f(u / (float) 16, 0);
-    //         glVertex3f(2 * cos(angle), 0, 2 * sin(angle));
-
-    //         glTexCoord2f(u / (float) 16, 1);
-    //         glVertex3f(2 * cos(angle), 1, 2 * sin(angle));
-    //     }
-    // glEnd();
-
-    // /* Iskljucujemo crtanje tekstura */
-    // glDisable(GL_TEXTURE_2D);
-
-    glBindTexture(GL_TEXTURE_2D, names[0]);
-    glEnable(GL_TEXTURE_2D);
-
-    glBegin(GL_QUADS);
-
-        glNormal3f(1, 0, 0);
-
-        glTexCoord2f(0, 0);
-        glVertex3f(1, 0, 2);
-
-        glTexCoord2f(1, 0);
-        glVertex3f(2.2, 0, 2);
-
-        glTexCoord2f(1, 1);
-        glVertex3f(2.2, 2.2, 2);
-
-        glTexCoord2f(0, 1);
-        glVertex3f(1, 2.2, 2);
-
-    glEnd();
-
-    glDisable(GL_TEXTURE_2D);
-
 }

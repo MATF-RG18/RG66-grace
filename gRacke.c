@@ -436,19 +436,6 @@ void on_display(void) {
         0, 0, 1
     );
 
-    // glPushMatrix();
-    // {
-
-    //     glBegin(GL_TRIANGLES);
-    //         for(int i=0; i<model_size; i++){
-    //                 glNormal3f(model[i].normal[0], model[i].normal[1], model[i].normal[2]);
-    //                 glVertex3f(model[i].position[0], model[i].position[1], model[i].position[2]);
-    //         } 
-    //     glEnd();
-        
-    // }
-    // glPopMatrix();
-
     postavi_teksturu_pustinje();
     postavi_teksturu_neba();
     postavi_teksturu_horizonta();
@@ -640,7 +627,20 @@ void iscrtaj_prepreke() {
             glPushMatrix();
             glColor3f(0, 1, 0);
             glRotatef(p.ugraoRotacije * 180/PI, 1, 0, 0);
-            glutSolidCube(1);
+                glPushMatrix();
+                {
+                    glColor3f(0.2, 0.2, 0.2);
+                    glScalef(0.71, 1, 1);
+                    glBegin(GL_TRIANGLES);
+                    for(int i=0; i<model_size; i++){
+                        glNormal3f(model[i].normal[0], model[i].normal[1], model[i].normal[2]);
+                        glVertex3f(model[i].position[0], model[i].position[1], model[i].position[2]);
+                    } 
+                glEnd();
+        
+                }
+    glPopMatrix();
+            //glutSolidCube(1);
             glPopMatrix();
         }
         else if (p.tipPrepreke == 1) {

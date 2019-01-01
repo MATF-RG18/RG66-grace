@@ -13,3 +13,6 @@ Sve vreme se odbrojava skor, tako da je kljuc osvojiti sto vise poena pre nego s
 
 Igra se igra iz prvog lica gde se stice utisak da je igrac na motoru i vozi kroz pustinju.
 
+Kontorle :
+
+    A, D za skretanje i Space za pucanje

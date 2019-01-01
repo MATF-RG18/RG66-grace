@@ -30,6 +30,7 @@
 //#define FILENAME3 "horizont.bmp"
 static GLuint names[3];
 
+//funkcija za inicijalizaciju tekstura
 static void initialize(void);
 
 static int window_width, window_height;
@@ -40,22 +41,25 @@ static void on_display(void);
 static void on_realese(unsigned char key, int x, int y);
 
 
+//ova funkcija pomera sinosoidu, ravan i sve prepreke na mapi ka igracu
+//takodje se proverava da li su sinusoida i ravan dosle do kraja, i da li ima potrebe za ponovnim iscrtavanjem i
+//biranjem koordinata prepreka na toj ravni
 void pomeriQuad(int value);
 
-static void iscrtaj_sinusoidu(double);
-static void iscrtaj_ravan();
-static void iscrtaj_motor();
-static void iscrtaj_prepreke();
+static void iscrtaj_sinusoidu(); // ova funckija crta sinusnu funkciju i bira random koordinate prepreka
+static void iscrtaj_ravan();  // ova funcija crta ravan koja prati sinusoidu
+static void iscrtaj_motor();  // funcija koja modeluje ruke, tocak i guvernal motora
+//sledece 4 funcije sluze za crtanje prepreka u odnosu na njihov tip i funckija moja crta metke koje korisinik ispaljuje
+static void iscrtaj_prepreke(); 
 static void iscrtaj_spiralu();
 static void iscrtaj_rupu();
 static void iscrtaj_metak(int);
-
 static void iscrtaj_sarzer();
 
 static void timer_spirala(int);
 static float parametar_spirale = 0;
 static int animacija_spirale = 0;
-
+// funcija koje brine o koliziji sa spiralom i animacijom federa
 
 static void teleportuj_se();
 
@@ -63,9 +67,12 @@ static void teleportuj_se();
 static void timer_rupe(int);
 static int animacija_rupe = 0;
 static float parametar_rupe = 0;
+// funcija koje brine o koliziji sa rupom i animacijom propadanja
 
 void skreni_desno(int value);
 void skreni_levo(int value);
+
+// funkcije koje sluze za animacije skretanja 
 
 typedef struct {
 
@@ -76,6 +83,8 @@ typedef struct {
     int pogodjena;
 
 }Prepreka;
+// struktura koja opisuje prepreku, njenim centrom, ivicnim koordinatama, tipom prepreke, uglom za koji se prepreka rotira na mapi
+// i da li je ta prepreka pogodjena metkom
 
 typedef struct {
 
@@ -84,6 +93,8 @@ typedef struct {
 
 }Metak;
 
+
+// sledece dve strukture sluze da bi se ucitao model iz blendera
 typedef struct Vertex
 {
     double position[3];
@@ -112,13 +123,17 @@ static float distance(Prepreka p);
 static void kolizija();
 static void kolizija_metak(Metak m);
 
+// funkcije za proveru kolizije igraca sa preprekama i metka sa preprekom
+
 Prepreka niz_prepreka[1000];
 static int moguci_tipovi_prepreka[] = {0, 1, 2, 3, 4}; //feder, kocka, teleport, rupa
-static int niz_mogucih_x[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+static int niz_mogucih_x[] = {0, 1, 2, 3, 4, 5, 6, 7, 8}; // moguce koordinate prepreka i igraca po x osi
+static float niz_mogucih_sinusa[] = {0.4, 0.6, 0.7, 0.8, 0.9};
 
 
-static int br_prepreka = 0;
+static int br_prepreka = 0; // brojac koji vodi racuna o tome koliko je prepreka trenutno na mapi zato sto njih ima random
 static float koordinate_prepreka_na_sinusoidi[]  = {5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95};
+// prepreke se postavljaju na razmaku od 5
 int br_koordinata = 10;
 
 static int animation_ongoing = 0;
@@ -126,18 +141,20 @@ static int animation_ongoing = 0;
 static float y_sinusoide = 10;
 static float x_kocke, y_kocke, z_kocke;
 static float X = 2;
+// koordinate kocke, tj koordinate igraca jer je tesko ispitivati koliziju sa motorom
 
 static float rand_factor = 0.8;
 
 static float niz_z[1000];
 static float niz_rotacija[1000];
+// niz koji prati kretanje igraca po sinusoidi
 
 static float ugrao_rotacije = 0;
 static int br_vrednosti = 0; 
 
 static int trenutni_element = 0;
 
-static float eyeX, eyeY, eyeZ;
+static float eyeX, eyeY, eyeZ; // koordinate kamere
 
 //ovde su za skretanje
 static float ugoa_desno = 0;
@@ -204,6 +221,8 @@ int main(int argc, char **argv) {
     eyeZ =  z_kocke + 1.2;
 
     //glutFullScreen();
+
+    // uzima se pokazivac na fajl u kome je napravljen model kamena
     FILE * file = fopen("./andra.obj", "r");
     if(file == NULL) 
     {
@@ -228,7 +247,7 @@ void on_reshape(int width, int height) {
    // br_prepreka = 0;
 }
 
-
+// kada se dugme otpusti zaustavljaju se animacije skretanja
 static void on_realese(unsigned char key, int x, int y) {
 
     switch (key) {
@@ -340,14 +359,19 @@ void pomeriQuad(int value) {
     if (value != TIMER_ID)
         return;
 
+    // apdejtuje se skor
     skriveni_skor++;
     if(skriveni_skor == 10) {
         score++;
         skriveni_skor = 0;
     }
+
+    // smanjuje se imune tajmer ako postoji
     if(imune > 0) {
         imune--;
     }
+
+    //pomeraju se sinusoida i ravan sa svim preprekama
     y_sinusoide -= 0.1;
     y_ravni -= 0.1;
 
@@ -355,6 +379,8 @@ void pomeriQuad(int value) {
         niz_prepreka[i].yPrepreke -= 0.1;
     }
     kolizija();
+
+    // uziamju se koordinate igraca u odnosu na to gde je stigao po sinusu ili je na ravni
     if(y_sinusoide <= 0.5) {
 
         if(y_sinusoide + 100 <= 0) {
@@ -366,9 +392,6 @@ void pomeriQuad(int value) {
             ugrao_rotacije = niz_rotacija[trenutni_element];
         }
         
-        
-        //ugrao_rotacije += 1 % 360;
-        //printf("%f ", ugrao_rotacije);
         if(animacija_spirale)
         {
             trenutni_element++;
@@ -385,6 +408,8 @@ void pomeriQuad(int value) {
         
         //1.3;
     }
+
+    // restartuju se sinusoida i ravan
 
     if(y_ravni + 10 <= 0) {
         y_ravni = 110;
@@ -447,6 +472,7 @@ void on_display(void) {
 
     }
 
+    // ispisuju se skor i preostali broj metaka 
     glRasterPos3f(eyeX + 5, 10, eyeZ + 3);
     char score_display[50] = "SCORE : ";
     char string_score[50];
@@ -489,9 +515,9 @@ void on_display(void) {
     iscrtaj_motor();
 
     glPushMatrix();
+    
     rand_factor = 0.8;
-
-    iscrtaj_sinusoidu(rand_factor);
+    iscrtaj_sinusoidu();
     iscrtaj_ravan();
     iscrtaj_prepreke();
     
@@ -500,7 +526,7 @@ void on_display(void) {
     glutSwapBuffers();
 }
 
-void iscrtaj_sinusoidu(double rand_factor) {
+void iscrtaj_sinusoidu() {
 
 
     glBindTexture(GL_TEXTURE_2D, names[0]);
@@ -517,11 +543,7 @@ void iscrtaj_sinusoidu(double rand_factor) {
         
         for (float i=0;i<=100;i+=0.1) {
 
-
-
-                // 0 0    1 0
-                // 0 0.1  1 0.1
-                // 0 0.2  1 0.2
+            // jedan od problema je bio da se na sinusoidu glatko zalepi tekstura, resenje je da se lepe mali delici slike u svakoj od iteracija
             
             niz_z[br_vrednosti] = sin(i * rand_factor);
             niz_rotacija[br_vrednosti++] = cos(i * rand_factor);
@@ -536,9 +558,11 @@ void iscrtaj_sinusoidu(double rand_factor) {
             uvecanje += 0.1;
             if(uvecanje == 1)
                 uvecanje = 0;
-            //printf("%f--%d--%d\n", y_sinusoide, prvi_put, animation_ongoing);
+            // indikator prvi put odredjuje da je igrac prvi put usao u igricu
+            // zatim ako je on prvi put u igrici ili je sinuspida na svojoj pocetnoj poziciji daje znak da
+            // je vreme da se opet generisu prepreke, postavi random broj njih i za svaku prepreku izracunati sve potrebno o njoj
             if (fabs(y_sinusoide - 10) < 0.01 && (prvi_put == 0 || animation_ongoing) ) {
-                
+                float rand_factor = niz_mogucih_sinusa[(int)rand() % 6];
                 z_ravni = sin(100 * rand_factor);
 
                 for (int j=0;j<19;j++) {
@@ -583,6 +607,8 @@ void iscrtaj_sinusoidu(double rand_factor) {
 
 static void iscrtaj_ravan() {
 
+    //samo postavljanje ravni i teksture na njoj
+
     glPushMatrix();
 
           glBindTexture(GL_TEXTURE_2D, names[0]);
@@ -617,6 +643,7 @@ static void iscrtaj_ravan() {
 
 void iscrtaj_prepreke() {
 
+    // u zavisnosti od tipa prepreke crta se prepreka tog tipa uz dodatne provere da li je prepreka pogodjena i da li treba da se crta
 
     for(int i=0; i<br_prepreka;i++) {
         Prepreka p = niz_prepreka[i];
@@ -753,20 +780,7 @@ void skreni_desno(int value) {
     if(ugoa_desno < 90)
         ugoa_desno += 5;
     rotation_desno += 0.1;
-
-    //eyeX =  eyeX - 0.01 * cos((rotation) * PI/180);
-    //eyeY =  eyeY - 0.01 * sin((rotation) * PI/180);
-
-    if(ugoa_desno >= 90) {
-
-            // ugoa_desno = 0;
-            // animacija_skretanja_desno = 0;
-            // eyeY = y_kocke - 1.5;
-            // eyeX = X;
-            // rotation_desno = 0;
-
-    }
-        
+    
     
     glutPostRedisplay();
 
@@ -783,17 +797,6 @@ void skreni_levo(int value) {
         ugao_levo += 5;
     rotation += 3;
 
-    //eyeX =  eyeX + 0.01 *cos(rotation * PI/180);
-    //eyeY =  eyeY + 0.01 * sin(rotation * PI/180);
-
-    // if(ugao_levo >= 180) {
-    //     ugao_levo = 0;
-    //     eyeY = y_kocke - 1.5;
-    //     eyeX = X;
-    //     animacija_skretanja_levo = 0;
-    //     rotation = 0;
-    // }
-        
     
     glutPostRedisplay();
 

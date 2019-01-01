@@ -807,6 +807,7 @@ void skreni_levo(int value) {
 
 static void iscrtaj_spiralu() {
     glPushMatrix();
+        // crta se spirala tako sto se parametrizuju krugovi sve veceg poluprecnika i dize se na gore
         //glTranslatef(x_obst,y_obst,z_obst);
         GLfloat x = 0,y=0.8,z=0,angle, r  = .0001;
         glBegin(GL_LINE_STRIP);
@@ -1136,6 +1137,7 @@ static void iscrtaj_sarzer() {
 
 }
 
+// ucitavanje modela u Vertex iz fajla
 Vertex* LoadObj(FILE * file){
     int verts_count = 0;
     int verts_count_of = STEP;

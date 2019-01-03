@@ -128,7 +128,7 @@ static void kolizija_metak(Metak m);
 Prepreka niz_prepreka[1000];
 static int moguci_tipovi_prepreka[] = {0, 1, 2, 3, 4}; //feder, kocka, teleport, rupa
 static int niz_mogucih_x[] = {0, 1, 2, 3, 4, 5, 6, 7, 8}; // moguce koordinate prepreka i igraca po x osi
-static float niz_mogucih_sinusa[] = {0.4, 0.6, 0.7, 0.8, 0.9};
+//static float niz_mogucih_sinusa[] = {0.4, 0.6, 0.7, 0.8, 0.9};
 
 
 static int br_prepreka = 0; // brojac koji vodi racuna o tome koliko je prepreka trenutno na mapi zato sto njih ima random
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
     //glutFullScreen();
 
     // uzima se pokazivac na fajl u kome je napravljen model kamena
-    FILE * file = fopen("./andra.obj", "r");
+    FILE * file = fopen("./andrija.obj", "r");
     if(file == NULL) 
     {
         printf("Los fajl");
@@ -562,7 +562,7 @@ void iscrtaj_sinusoidu() {
             // zatim ako je on prvi put u igrici ili je sinuspida na svojoj pocetnoj poziciji daje znak da
             // je vreme da se opet generisu prepreke, postavi random broj njih i za svaku prepreku izracunati sve potrebno o njoj
             if (fabs(y_sinusoide - 10) < 0.01 && (prvi_put == 0 || animation_ongoing) ) {
-                float rand_factor = niz_mogucih_sinusa[(int)rand() % 6];
+                //float random_factor = niz_mogucih_sinusa[(int)rand() % 6];
                 z_ravni = sin(100 * rand_factor);
 
                 for (int j=0;j<19;j++) {
